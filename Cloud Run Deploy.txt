@@ -1,0 +1,63 @@
+BACK END
+
+- clone repo
+git clone -b notes-api https://github.com/dicodingacademy/a133-gcp-labs.git notes-api
+
+- enter directory notes-api(hasil clone diatas)
+cd notes-api/
+
+- new file Dockerfile
+nano Dockerfile
+
+- fill setting to Dockerfile
+FROM node:14.21.2-alpine
+WORKDIR /app
+ENV PORT 5000
+COPY . .
+RUN npm install
+EXPOSE 5000
+CMD [ "npm", "run", "start"]
+
+- ctrl + y -> y -> enter
+
+- make container image
+gcloud builds submit --tag gcr.io/[project-id]/backend
+gcloud builds submit --tag gcr.io/titanium-haiku-402723/backend
+
+-deploy image container
+gcloud run deploy --image gcr.io/[project-id]/backend
+gcloud run deploy --image gcr.io/titanium-haiku-402723/backend
+
+========================================
+FRONT END
+
+- go to primary directory
+cd ..
+
+- clone note apps
+git clone -b notes-app https://github.com/dicodingacademy/a133-gcp-labs.git notes-app
+
+- open directory notes-app
+cd notes-app/
+
+- make Dockerfile in directory
+nano Dockerfile
+
+- set setting Dockerfile
+FROM node:14.21.2-alpine
+WORKDIR /app
+COPY . .
+RUN npm install
+RUN npm run build
+EXPOSE 8080
+CMD [ "npm", "run", "start"]
+
+- ctrl+x -> y -> enter
+
+- make new image container
+gcloud builds submit --tag gcr.io/<project-id>/frontend
+gcloud builds submit --tag gcr.io/titanium-haiku-402723/frontend
+
+- deploy the new image
+gcloud run deploy --image gcr.io/<project-id>/frontend
+gcloud run deploy --image gcr.io/titanium-haiku-402723/frontend

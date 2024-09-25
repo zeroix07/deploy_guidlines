@@ -1,0 +1,144 @@
+buat service account
+IAM -> service accounts
+create 2 service account
+- for cloud storage
+- cloud run dan cloud build
+
+create service account cloud storage
+name:gsc-invoker
+role:
+storage object admin
+done
+
+create service account cloud build
+name:cicd-sa
+role:
+storage object admin
+artifact registry administrator
+cloud build service account
+cloud run admin
+compute admin
+secret manager secret accessor
+service account user
+done
+
+go to service account
+in gcp-invoker > manage keys
+add key > json > create
+serviceaccount.json will downloaded
+move file to project folder file in credentials folder
+done
+
+go to iam
+number-compute@developr.gserviceaccount.com
+edit principle>add role
+secret manager secret accessor
+save
+==========================================
+create env variable in secret manager
+
+go to secret manager and enable api
+create secret
+isi name dan secret value sesuai yang ada di .env file
+Name: bucket_name (kecil tidak apa apa)
+Secret value: value dari bucket_name
+create secret
+
+ulangi create sampai semua variable env terisi
+
+==========================================
+Enables Product API
+
+go to marketplace
+Cloud Run
+Identity and Access Management (IAM) API
+Cloud Run Admin API
+Artifact Registry API
+
+==========================================
+Create Cloud Storage
+
+create
+Name_your_bucket
+region: asia-southeast1
+choose a storage class for your data: Set a default class > standart
+access control: Fine-grained
+create
+
+==========================================
+
+go to google cloud build
+Enable Cloud Build API
+
+==========================================
+in project app
+create Dockerfile
+create cloudbuild.yaml
+
+in Dockerfile
+
+FROM python:3.10-slim
+ENV PYTHONBUFFERED True
+ENV APP_HOME /app
+WORKDIR $APP_HOME
+COPY . ./
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+EXPOSE 8080
+CMD ["python","main.py"]
+==========================================
+go to Artifact Registy
+
+create repository
+name: sharingsession-artifact
+format: Docker
+mode: Standart
+region: us-central1
+create
+==========================================
+in Cloudbuild.yaml
+
+step:
+- name: gcr.io/cloud-builders/docker
+args:
+- 'build'
+- '-t'
+- 'us-central1-docker.pkg.dev/$PROJECT_ID/sharingsession-artifact/model-image:$COMMIT_SHA'
+- '.'
+- name: gcr.io/cloud-builders/docker
+args:
+- 'push'
+- 'us-central1-docker.pkg.dev/$PROJECT_ID/sharingsession-artifact/model-image:$COMMIT_SHA'
+- name: 'gcr.io/cloud-builders/gcloud'
+entrypoint: gcloud
+args: 
+- 'run'
+- 'deploy'
+- 'api-model'
+- '--image=us-central1-docker.pkg.dev/$PROJECT_ID/sharingsession-artifact/model-image:$COMMIT_SHA'
+- '--region=us-central1'
+- '--cpu=1'
+- '--memory=2048Mi'
+- '--allow-unauthenticated'
+- '--set-secrets=BUCKET_NAME=bucket_name:latest'
+images:
+- 'us-central1-docker.pkg.dev/$PROJECT_ID/sharingsession-artifact/model-image:$COMMIT_SHA'
+logsBucket: 'gs://sharingsession-bucket/logs'
+
+==========================================
+go to cloud build > triger
+
+create trigger
+name:cicd-model
+region:us-central1
+
+repository: connect new repository > connect to your repo
+branch: main
+configuration: cloudbuild.yaml
+location: repository
+cloud build configuration file location: /cloudbuild.yaml
+service account email: cicd-sa@serviceaccount.com
+
+==========================================
+
+
